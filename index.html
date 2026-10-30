@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<!-- saved from url=(0075)file:///C:/Users/ok/Documents/Stonic%20Data/Personal_Library_App/index.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#05070f">
+<title>Personal Library</title>
+<style>
+:root {
+  --bg-0: #0a0703;
+  --bg-1: #1a1208;
+  --bg-2: #2b1d0c;
+  --panel: rgba(46, 32, 14, 0.55);
+  --panel-solid: #2b1d0c;
+  --line: rgba(230, 180, 90, 0.22);
+  --text: #fff4e0;
+  --muted: #bfa77a;
+  --accent: #e8b04a;
+  --accent-2: #c97a3a;
+  --glow: 0 0 24px rgba(232, 176, 74, 0.35);
+  --radius: 18px;
+  --font-body: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 700px at 10% -10%, rgba(110, 90, 255, 0.25), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(40, 150, 255, 0.22), transparent 60%),
+    linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 40%, var(--bg-0) 100%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+#stars { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+main, header, .overlay { position: relative; z-index: 1; }
+[hidden] { display: none !important; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* ---------- Buttons & inputs ---------- */
+.btn {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  touch-action: manipulation;
+}
+.btn:hover { background: rgba(255, 255, 255, 0.09); transform: translateY(-1px); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+.btn-primary {
+  border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #050816;
+  font-weight: 600;
+  box-shadow: var(--glow);
+}
+.btn-danger { color: #ff9aa8; }
+.btn-small { padding: 0.4rem 0.7rem; font-size: 0.85rem; }
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(3, 6, 20, 0.7);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(110, 168, 255, 0.18);
+}
+label { display: block; font-size: 0.85rem; color: var(--muted); margin: 0.9rem 0 0.35rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- Login overlay ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  display: grid; place-items: center; padding: 1.2rem;
+  background: rgba(3, 4, 10, 0.72);
+  backdrop-filter: blur(8px);
+  animation: fade-in 0.5s ease;
+}
+.login-card {
+  width: min(400px, 100%);
+  padding: 2.2rem 1.8rem;
+  border-radius: 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), var(--glow);
+  animation: rise 0.6s cubic-bezier(.2,.8,.2,1);
+}
+.orb {
+  width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff, var(--accent) 35%, var(--accent-2) 70%, transparent 72%);
+  box-shadow: 0 0 40px rgba(110, 168, 255, 0.7);
+  animation: pulse 3s ease-in-out infinite;
+}
+.login-card h1 { text-align: center; margin: 0; font-size: 1.4rem; letter-spacing: 0.04em; }
+.login-card p.sub { text-align: center; color: var(--muted); margin: 0.4rem 0 1.4rem; font-size: 0.9rem; }
+.login-card .btn-primary { width: 100%; margin-top: 1.4rem; padding: 0.85rem; }
+.error { min-height: 1.2rem; margin-top: 0.8rem; text-align: center; color: #ff9aa8; font-size: 0.9rem; }
+.shake { animation: shake 0.4s; }
+
+/* ---------- Header ---------- */
+header {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.9rem clamp(1rem, 4vw, 2.5rem);
+  background: rgba(5, 8, 22, 0.6);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 0.7rem; font-weight: 600; letter-spacing: 0.05em; }
+.brand .orb { width: 30px; height: 30px; margin: 0; animation: none; }
+.header-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- Dashboard ---------- */
+main { padding: clamp(1rem, 3vw, 2.2rem) clamp(1rem, 4vw, 2.5rem) 4rem; max-width: 1280px; margin: 0 auto; }
+.toolbar { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.toolbar .search { flex: 1 1 260px; }
+.toolbar select { flex: 0 1 200px; width: auto; }
+.grid {
+  display: grid; gap: 1.2rem;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+.card {
+  display: flex; flex-direction: column;
+  border-radius: var(--radius);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  animation: rise 0.5s ease both;
+}
+.card:hover { transform: translateY(-6px); box-shadow: var(--glow); border-color: rgba(110, 168, 255, 0.5); }
+.cover {
+  height: 150px; position: relative; display: flex; align-items: flex-end; padding: 1rem;
+  background: var(--cover, linear-gradient(135deg, #3b5bff, #9b59ff));
+}
+.cover::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 80% 10%, rgba(255,255,255,0.35), transparent 40%);
+}
+.cover .cover-title {
+  position: relative; z-index: 1; font-family: var(--font-serif);
+  font-size: 1.15rem; line-height: 1.25; text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+.card-body { padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+.card-meta { font-size: 0.8rem; color: var(--muted); }
+.card-desc {
+  margin: 0; color: #c3cbec; font-size: 0.9rem; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.tag {
+  font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 999px;
+  background: rgba(110, 168, 255, 0.12); border: 1px solid rgba(110, 168, 255, 0.3); color: #cfe0ff;
+}
+.card-actions { margin-top: auto; display: flex; gap: 0.5rem; padding-top: 0.6rem; flex-wrap: wrap; }
+.card-actions .btn { flex: 1; text-align: center; }
+.empty { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+
+/* ---------- Reader ---------- */
+.reader-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.reader-title { margin: 0; font-size: 1.1rem; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reader-tools { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.reader-tools select { width: auto; padding: 0.45rem 0.6rem; }
+.reader-tools input[type=range] { width: 120px; padding: 0; accent-color: var(--accent); }
+.book-stage {
+  position: relative; perspective: 1400px;
+  min-height: 60vh;
+  touch-action: pan-y;
+  user-select: text;
+}
+.page {
+  min-height: 60vh; padding: clamp(1.2rem, 4vw, 3rem);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,253,246,0.97), rgba(240,236,224,0.96));
+  color: #1b1d2a;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.45);
+  white-space: pre-wrap; line-height: 1.85;
+  font-family: var(--font-serif);
+  transform-origin: left center;
+}
+.page.flip-next { animation: flip-next 0.45s ease; }
+.page.flip-prev { animation: flip-prev 0.45s ease; }
+.page-editor { min-height: 60vh; font-family: var(--font-serif); line-height: 1.8; background: #fffdf6; color: #1b1d2a; border: none; }
+.page-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap; }
+.page-number { color: var(--muted); font-size: 0.9rem; }
+.hint { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 0.6rem; }
+
+/* ---------- Modal ---------- */
+dialog {
+  width: min(680px, 94vw); max-height: 90vh;
+  padding: 0; border: 1px solid var(--line); border-radius: 22px;
+  background: var(--panel-solid); color: var(--text);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6), var(--glow);
+}
+dialog::backdrop { background: rgba(3,4,10,0.7); backdrop-filter: blur(6px); }
+.modal-inner { padding: 1.5rem; overflow-y: auto; max-height: 90vh; }
+.modal-inner h2 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+.row { display: grid; gap: 0.8rem; grid-template-columns: 1fr 1fr; }
+.row.full { grid-template-columns: 1fr; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.4rem; flex-wrap: wrap; }
+textarea.content { min-height: 180px; font-family: var(--font-serif); line-height: 1.6; }
+.upload-note { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+.color-pick { height: 42px; padding: 0.2rem; }
+
+/* ---------- Animations ---------- */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+@keyframes flip-next { from { transform: rotateY(-14deg) translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes flip-prev { from { transform: rotateY(14deg) translateX(-30px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- Hero banner ---------- */
+.hero {
+  position: relative; overflow: hidden;
+  display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  padding: clamp(1.4rem, 3vw, 2.2rem); margin-bottom: 1.6rem;
+  border-radius: 24px; border: 1px solid var(--line);
+  background: linear-gradient(120deg, rgba(79,124,255,0.25), rgba(178,141,255,0.18), rgba(40,200,255,0.12));
+  background-size: 200% 200%;
+  animation: drift 12s ease infinite, rise 0.7s ease both;
+}
+.hero::before {
+  content: ""; position: absolute; width: 380px; height: 380px; right: -120px; top: -160px;
+  background: radial-gradient(circle, rgba(110,168,255,0.45), transparent 65%);
+  animation: float 9s ease-in-out infinite; pointer-events: none;
+}
+.hero-kicker { margin: 0; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase; color: #a9c8ff; }
+.hero-title {
+  margin: 0.3rem 0 0.5rem; font-family: var(--font-serif); font-size: clamp(1.4rem, 3.4vw, 2.1rem);
+  background: linear-gradient(90deg, #ffffff, #9fc3ff, #d2b5ff, #ffffff);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shine 6s linear infinite;
+}
+.hero-quote { margin: 0; max-width: 46ch; color: #c9d4f5; font-style: italic; line-height: 1.6; min-height: 3em; transition: opacity 0.6s ease; }
+.hero-stats { display: flex; gap: 0.8rem; flex-wrap: wrap; position: relative; z-index: 1; }
+.hero-stats div {
+  min-width: 96px; text-align: center; padding: 0.9rem 1rem; border-radius: 16px;
+  background: rgba(5, 8, 22, 0.55); border: 1px solid var(--line);
+}
+.hero-stats span { display: block; font-size: 1.7rem; font-weight: 700; color: #fff; text-shadow: var(--glow); }
+.hero-stats small { color: var(--muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+@keyframes drift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes float { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-30px, 20px); } }
+@keyframes shine { to { background-position: 300% 0; } }
+
+/* ---------- Credit corner ---------- */
+.credit {
+  position: fixed; right: 0.9rem; bottom: 0.7rem; z-index: 5;
+  font-size: 0.75rem; color: var(--muted); letter-spacing: 0.03em;
+  padding: 0.3rem 0.7rem; border-radius: 999px;
+  background: rgba(5, 8, 22, 0.55); border: 1px solid var(--line);
+  backdrop-filter: blur(8px); pointer-events: none;
+}
+.credit strong { color: var(--text); font-weight: 600; }
+
+/* ---------- Small screens ---------- */
+@media (max-width: 640px) {
+  header { flex-direction: column; align-items: stretch; }
+  .header-actions { justify-content: stretch; }
+  .header-actions .btn { flex: 1; }
+  .row { grid-template-columns: 1fr; }
+  .toolbar select { flex: 1 1 100%; }
+  .reader-tools input[type=range] { width: 100px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.9rem; }
+  .cover { height: 120px; }
+}
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true" width="2560" height="1313"></canvas>
+
+<!-- Login overlay: shown until the correct credentials are entered -->
+<div id="login" class="overlay" hidden="">
+  <form id="login-form" class="login-card" autocomplete="on">
+    <div class="orb" aria-hidden="true"></div>
+    <h1>Personal Library</h1>
+    <p class="sub">Sign in to open your books</p>
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required="">
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required="">
+    <button class="btn btn-primary" type="submit">Enter</button>
+    <div id="login-error" class="error" role="alert"></div>
+  </form>
+</div>
+
+<div id="app">
+  <header>
+    <div class="brand"><span class="orb" aria-hidden="true"></span><span>Personal Library</span></div>
+    <div class="header-actions">
+      <button id="btn-add" class="btn btn-primary">+ Add book</button>
+      <button id="btn-logout" class="btn">Log out</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Dashboard -->
+    <section id="dashboard">
+      <div class="hero">
+        <div>
+          <p class="hero-kicker" id="hero-greeting">Good morning, Sir</p>
+          <h2 class="hero-title">Your personal universe of books</h2>
+          <p class="hero-quote" id="hero-quote" style="opacity: 1;">A reader lives a thousand lives before he dies. - George R. R. Martin</p>
+        </div>
+        <div class="hero-stats">
+          <div><span id="stat-books">2</span><small>Books</small></div>
+          <div><span id="stat-pages">3</span><small>Pages</small></div>
+          <div><span id="stat-cats">2</span><small>Categories</small></div>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input id="search" class="search" type="search" placeholder="Search titles, authors, tags...">
+        <select id="category-filter" aria-label="Filter by category"><option value="">All categories</option><option value="Notes">Notes</option><option value="sjkym y">sjkym y</option></select>
+      </div>
+      <div id="grid" class="grid">
+    <article class="card" style="animation-delay:0ms">
+      <div class="cover" style="--cover: linear-gradient(135deg, #82ff4d, #1a1f4a 90%)">
+        <span class="cover-title">dghsdmn</span>
+      </div>
+      <div class="card-body">
+        <div class="card-meta">gdfhjms ftjsr · 1 page · sjkym y</div>
+        <p class="card-desc">ykm wyte</p>
+        <div class="tags"><span class="tag">yjmsw yj sy</span></div>
+        <div class="card-actions">
+          <button class="btn btn-small btn-primary" data-read="2ceac64a-f5b0-4983-9062-449d7fddbb7d">Read</button>
+          <button class="btn btn-small" data-edit="2ceac64a-f5b0-4983-9062-449d7fddbb7d">Edit</button>
+          <button class="btn btn-small btn-danger" data-delete="2ceac64a-f5b0-4983-9062-449d7fddbb7d">Delete</button>
+        </div>
+      </div>
+    </article>
+    <article class="card" style="animation-delay:40ms">
+      <div class="cover" style="--cover: linear-gradient(135deg, #4f7cff, #1a1f4a 90%)">
+        <span class="cover-title">Welcome to your library</span>
+      </div>
+      <div class="card-body">
+        <div class="card-meta">Personal Library · 2 pages · Notes</div>
+        <p class="card-desc">A sample book. Edit it or delete it, then add your own stories and documents.</p>
+        <div class="tags"><span class="tag">start</span><span class="tag">guide</span></div>
+        <div class="card-actions">
+          <button class="btn btn-small btn-primary" data-read="0e5ea8bb-6c9c-4191-8b64-aff5c7986fd3">Read</button>
+          <button class="btn btn-small" data-edit="0e5ea8bb-6c9c-4191-8b64-aff5c7986fd3">Edit</button>
+          <button class="btn btn-small btn-danger" data-delete="0e5ea8bb-6c9c-4191-8b64-aff5c7986fd3">Delete</button>
+        </div>
+      </div>
+    </article></div>
+      <p id="empty" class="empty" hidden="">No books yet. Add your first book or story.</p>
+    </section>
+
+    <!-- Reader -->
+    <section id="reader" hidden="">
+      <div class="reader-bar">
+        <button id="btn-back" class="btn">← Library</button>
+        <h2 id="reader-title" class="reader-title"></h2>
+        <div class="reader-tools">
+          <select id="font-family" aria-label="Font">
+            <option value="serif">Serif</option>
+            <option value="sans">Sans</option>
+          </select>
+          <input id="font-size" type="range" min="14" max="26" step="1" value="18" aria-label="Font size">
+          <button id="btn-edit-page" class="btn btn-small">Edit page</button>
+        </div>
+      </div>
+
+      <div id="book-stage" class="book-stage">
+        <div id="page" class="page"></div>
+      </div>
+
+      <div class="page-footer">
+        <button id="btn-prev" class="btn">← Previous</button>
+        <span id="page-number" class="page-number"></span>
+        <button id="btn-next" class="btn">Next →</button>
+      </div>
+      <p class="hint">Tap the left or right side, swipe, or use the arrow keys to turn pages.</p>
+    </section>
+  </main>
+  <footer class="credit">Library by <strong>Basit Hanma</strong></footer>
+</div>
+
+<!-- Add / edit book modal -->
+<dialog id="book-modal">
+  <form id="book-form" class="modal-inner" method="dialog">
+    <h2 id="modal-title">Add book</h2>
+    <div class="row">
+      <div><label for="f-title">Title</label><input id="f-title" required=""></div>
+      <div><label for="f-author">Author</label><input id="f-author"></div>
+    </div>
+    <div class="row">
+      <div><label for="f-category">Category</label><input id="f-category" placeholder="Stories, Company, Notes..."></div>
+      <div><label for="f-tags">Tags (comma separated)</label><input id="f-tags" placeholder="family, history"></div>
+    </div>
+    <div class="row">
+      <div><label for="f-desc">Description</label><textarea id="f-desc" rows="3"></textarea></div>
+      <div><label for="f-color">Cover color</label><input id="f-color" type="color" class="color-pick" value="#4f7cff"></div>
+    </div>
+    <div class="row full">
+      <div>
+        <label for="f-content">Content (separate pages with a line containing ---)</label>
+        <textarea id="f-content" class="content" placeholder="Type or paste your story here..."></textarea>
+        <input id="f-pdf" type="file" accept="application/pdf" style="margin-top:0.6rem">
+        <p class="upload-note">Upload a PDF to fill the content above. Each PDF page becomes a book page. Only text is kept.</p>
+        <p id="pdf-status" class="upload-note"></p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" id="btn-cancel" class="btn">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save book</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+/* ==========================================================
+   Personal Library - self-contained app
+   Storage: localStorage (books and reader preferences)
+   Login: username + SHA-256 hash of the password (no plain text)
+   ========================================================== */
+
+const LOGIN_USER = "admin";
+// SHA-256 of "password123". To change it, hash your own password and paste the hex here.
+const LOGIN_HASH = "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f";
+
+const BOOKS_KEY = "deepspace-library-v1";
+const PREFS_KEY = "deepspace-prefs-v1";
+const SESSION_KEY = "deepspace-session";
+const PAGE_SEPARATOR = /\n-{3,}\n/;
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  login: $("login"), loginForm: $("login-form"), loginError: $("login-error"),
+  app: $("app"), grid: $("grid"), empty: $("empty"), search: $("search"),
+  categoryFilter: $("category-filter"), dashboard: $("dashboard"), reader: $("reader"),
+  readerTitle: $("reader-title"), page: $("page"), pageNumber: $("page-number"),
+  stage: $("book-stage"), btnPrev: $("btn-prev"), btnNext: $("btn-next"),
+  btnEditPage: $("btn-edit-page"), fontFamily: $("font-family"), fontSize: $("font-size"),
+  modal: $("book-modal"), form: $("book-form"), modalTitle: $("modal-title"),
+  fTitle: $("f-title"), fAuthor: $("f-author"), fCategory: $("f-category"), fTags: $("f-tags"),
+  fDesc: $("f-desc"), fColor: $("f-color"), fContent: $("f-content"), fPdf: $("f-pdf"),
+  pdfStatus: $("pdf-status"),
+};
+
+let books = [];
+let prefs = { fontSize: 18, fontFamily: "serif" };
+let state = { bookId: null, pageIndex: 0, editing: false, editingBookId: null };
+
+/* ---------- Helpers ---------- */
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+async function sha256(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function loadBooks() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BOOKS_KEY));
+    if (Array.isArray(saved)) return saved;
+  } catch (e) { /* fall through to sample */ }
+  return [{
+    id: uid(), title: "Welcome to your library", author: "Personal Library",
+    category: "Notes", tags: ["start", "guide"],
+    description: "A sample book. Edit it or delete it, then add your own stories and documents.",
+    color: "#4f7cff",
+    pages: [
+      "Welcome.\n\nThis is your personal library. Add a book with the button above.",
+      "Each book can have many pages. Use the arrows, swipe, or tap the sides to turn them."
+    ],
+    updated: Date.now(),
+  }];
+}
+
+function saveBooks() { localStorage.setItem(BOOKS_KEY, JSON.stringify(books)); }
+function savePrefs() { localStorage.setItem(PREFS_KEY, JSON.stringify(prefs)); }
+function esc(text) {
+  return String(text ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function coverStyle(color) {
+  return `--cover: linear-gradient(135deg, ${color}, #1a1f4a 90%)`;
+}
+function findBook(id) { return books.find((b) => b.id === id); }
+
+/* ---------- Login ---------- */
+function showApp() {
+  els.login.hidden = true;
+  els.app.hidden = false;
+  renderDashboard();
+  speakWelcome();
+}
+
+function speakWelcome() {
+  if (!("speechSynthesis" in window)) return;
+  const msg = new SpeechSynthesisUtterance("Welcome, Hanma family member");
+  msg.lang = "en-US";
+  msg.rate = 0.95;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(msg);
+}
+function showLogin() {
+  els.app.hidden = true;
+  els.login.hidden = false;
+  els.loginForm.reset();
+  setTimeout(() => $("username").focus(), 50);
+}
+
+els.loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const user = $("username").value.trim();
+  const pass = $("password").value;
+  const hash = await sha256(pass);
+  if (user === LOGIN_USER && hash === LOGIN_HASH) {
+    sessionStorage.setItem(SESSION_KEY, "1");
+    els.loginError.textContent = "";
+    showApp();
+  } else {
+    els.loginError.textContent = "Invalid username or password.";
+    els.loginForm.classList.remove("shake");
+    void els.loginForm.offsetWidth;
+    els.loginForm.classList.add("shake");
+  }
+});
+
+$("btn-logout").addEventListener("click", () => {
+  sessionStorage.removeItem(SESSION_KEY);
+  showLogin();
+});
+
+/* ---------- Dashboard ---------- */
+function renderCategories() {
+  const current = els.categoryFilter.value;
+  const cats = [...new Set(books.map((b) => b.category).filter(Boolean))].sort();
+  els.categoryFilter.innerHTML = `<option value="">All categories</option>` +
+    cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  els.categoryFilter.value = cats.includes(current) ? current : "";
+}
+
+function renderDashboard() {
+  renderCategories();
+  const q = els.search.value.trim().toLowerCase();
+  const cat = els.categoryFilter.value;
+  const list = books.filter((b) => {
+    const hay = [b.title, b.author, b.category, b.description, ...(b.tags || [])].join(" ").toLowerCase();
+    return (!q || hay.includes(q)) && (!cat || b.category === cat);
+  });
+  els.grid.innerHTML = list.map((b, i) => `
+    <article class="card" style="animation-delay:${i * 40}ms">
+      <div class="cover" style="${coverStyle(b.color)}">
+        <span class="cover-title">${esc(b.title)}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-meta">${esc(b.author || "Unknown author")} &middot; ${b.pages.length} ${b.pages.length === 1 ? "page" : "pages"}${b.category ? " &middot; " + esc(b.category) : ""}</div>
+        <p class="card-desc">${esc(b.description || "No description.")}</p>
+        <div class="tags">${(b.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
+        <div class="card-actions">
+          <button class="btn btn-small btn-primary" data-read="${b.id}">Read</button>
+          <button class="btn btn-small" data-edit="${b.id}">Edit</button>
+          <button class="btn btn-small btn-danger" data-delete="${b.id}">Delete</button>
+        </div>
+      </div>
+    </article>`).join("");
+  els.empty.hidden = list.length > 0;
+  updateHero();
+}
+
+/* ---------- Hero banner: greeting, quote, stats ---------- */
+const QUOTES = [
+  "A reader lives a thousand lives before he dies. - George R. R. Martin",
+  "So many books, so little time. - Frank Zappa",
+  "Until I feared I would lose it, I never loved to read. - Harper Lee",
+  "Books are a uniquely portable magic. - Stephen King",
+  "The more that you read, the more things you will know. - Dr. Seuss",
+  "Reading is to the mind what exercise is to the body. - Joseph Addison",
+];
+let quoteIndex = Math.floor(Math.random() * QUOTES.length);
+
+function updateHero() {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  $("hero-greeting").textContent = `${part}, Sir`;
+  $("stat-books").textContent = books.length;
+  $("stat-pages").textContent = books.reduce((sum, b) => sum + b.pages.length, 0);
+  $("stat-cats").textContent = new Set(books.map((b) => b.category).filter(Boolean)).size;
+  $("hero-quote").textContent = QUOTES[quoteIndex];
+}
+
+setInterval(() => {
+  const quote = $("hero-quote");
+  if (!quote) return;
+  quote.style.opacity = 0;
+  setTimeout(() => {
+    quoteIndex = (quoteIndex + 1) % QUOTES.length;
+    quote.textContent = QUOTES[quoteIndex];
+    quote.style.opacity = 1;
+  }, 600);
+}, 9000);
+
+els.search.addEventListener("input", renderDashboard);
+els.categoryFilter.addEventListener("change", renderDashboard);
+
+els.grid.addEventListener("click", (event) => {
+  const read = event.target.closest("[data-read]");
+  const edit = event.target.closest("[data-edit]");
+  const del = event.target.closest("[data-delete]");
+  if (read) openReader(read.dataset.read, 0);
+  if (edit) openEditor(edit.dataset.edit);
+  if (del) deleteBook(del.dataset.delete);
+});
+
+function deleteBook(id) {
+  const book = findBook(id);
+  if (!book || !confirm(`Delete "${book.title}"? This cannot be undone.`)) return;
+  books = books.filter((b) => b.id !== id);
+  saveBooks();
+  renderDashboard();
+}
+
+/* ---------- Add / edit modal ---------- */
+function openEditor(id = null) {
+  const book = id ? findBook(id) : null;
+  state.editingBookId = book ? book.id : null;
+  els.modalTitle.textContent = book ? "Edit book" : "Add book";
+  els.fTitle.value = book?.title || "";
+  els.fAuthor.value = book?.author || "";
+  els.fCategory.value = book?.category || "";
+  els.fTags.value = (book?.tags || []).join(", ");
+  els.fDesc.value = book?.description || "";
+  els.fColor.value = book?.color || "#4f7cff";
+  els.fContent.value = book ? book.pages.join("\n---\n") : "";
+  els.fPdf.value = "";
+  els.pdfStatus.textContent = "";
+  els.modal.showModal();
+}
+
+$("btn-add").addEventListener("click", () => openEditor());
+$("btn-cancel").addEventListener("click", () => els.modal.close());
+
+els.form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const pages = els.fContent.value.split(PAGE_SEPARATOR).map((p) => p.trim()).filter(Boolean);
+  const data = {
+    title: els.fTitle.value.trim() || "Untitled",
+    author: els.fAuthor.value.trim(),
+    category: els.fCategory.value.trim(),
+    tags: els.fTags.value.split(",").map((t) => t.trim()).filter(Boolean),
+    description: els.fDesc.value.trim(),
+    color: els.fColor.value,
+    pages: pages.length ? pages : [""],
+    updated: Date.now(),
+  };
+  const existing = state.editingBookId ? findBook(state.editingBookId) : null;
+  if (existing) Object.assign(existing, data);
+  else books.unshift({ id: uid(), ...data });
+  saveBooks();
+  els.modal.close();
+  renderDashboard();
+});
+
+/* ---------- PDF to text (uses the local pdf.js copy) ---------- */
+let pdfjsPromise = null;
+function loadPdfJs() {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import("./assets/pdfjs/pdf.mjs").then((lib) => {
+      lib.GlobalWorkerOptions.workerSrc = "./assets/pdfjs/pdf.worker.mjs";
+      return lib;
+    });
+  }
+  return pdfjsPromise;
+}
+
+els.fPdf.addEventListener("change", async () => {
+  const file = els.fPdf.files[0];
+  if (!file) return;
+  els.pdfStatus.textContent = "Reading PDF...";
+  try {
+    const lib = await loadPdfJs();
+    const doc = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const pages = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const page = await doc.getPage(n);
+      const content = await page.getTextContent();
+      const text = content.items.map((item) => item.str + (item.hasEOL ? "\n" : " ")).join("");
+      pages.push(text.replace(/[ \t]+/g, " ").trim());
+    }
+    els.fContent.value = pages.join("\n---\n");
+    if (!els.fTitle.value.trim()) els.fTitle.value = file.name.replace(/\.pdf$/i, "");
+    els.pdfStatus.textContent = `Loaded ${pages.length} pages. You can edit the text before saving.`;
+  } catch (err) {
+    els.pdfStatus.textContent = "Could not read this PDF. Open the app through a local web server, or paste the text instead.";
+  }
+});
+
+/* ---------- Reader ---------- */
+function openReader(id, pageIndex = 0) {
+  const book = findBook(id);
+  if (!book) return;
+  state = { bookId: id, pageIndex: Math.min(pageIndex, book.pages.length - 1), editing: false, editingBookId: null };
+  els.dashboard.hidden = true;
+  els.reader.hidden = false;
+  els.readerTitle.textContent = book.title;
+  renderPage();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function currentBook() { return findBook(state.bookId); }
+
+function renderPage(direction = "") {
+  const book = currentBook();
+  if (!book) return;
+  const total = book.pages.length;
+  state.pageIndex = Math.max(0, Math.min(state.pageIndex, total - 1));
+  const family = prefs.fontFamily === "sans" ? "var(--font-body)" : "var(--font-serif)";
+  els.page.style.fontSize = prefs.fontSize + "px";
+  els.page.style.fontFamily = family;
+  let editor = $("page-editor");
+  if (state.editing) {
+    els.page.hidden = true;
+    if (!editor) {
+      editor = document.createElement("textarea");
+      editor.id = "page-editor";
+      editor.className = "page-editor";
+      els.stage.insertBefore(editor, els.page);
+    }
+    editor.hidden = false;
+    editor.value = book.pages[state.pageIndex];
+    editor.style.fontSize = prefs.fontSize + "px";
+    editor.style.fontFamily = family;
+    els.btnEditPage.textContent = "Save page";
+  } else {
+    if (editor) editor.hidden = true;
+    els.page.hidden = false;
+    els.page.className = "page" + (direction ? " flip-" + direction : "");
+    els.page.textContent = book.pages[state.pageIndex] || "(empty page)";
+    els.btnEditPage.textContent = "Edit page";
+  }
+  els.pageNumber.textContent = `Page ${state.pageIndex + 1} of ${total}`;
+  els.btnPrev.disabled = state.pageIndex === 0;
+  els.btnNext.disabled = state.pageIndex === total - 1;
+}
+
+function flip(step) {
+  if (state.editing) return;
+  const book = currentBook();
+  if (!book) return;
+  const next = state.pageIndex + step;
+  if (next < 0 || next >= book.pages.length) return;
+  state.pageIndex = next;
+  renderPage(step > 0 ? "next" : "prev");
+}
+
+els.btnPrev.addEventListener("click", () => flip(-1));
+els.btnNext.addEventListener("click", () => flip(1));
+$("btn-back").addEventListener("click", () => {
+  if (state.editing) return;
+  els.reader.hidden = true;
+  els.dashboard.hidden = false;
+  renderDashboard();
+});
+
+els.btnEditPage.addEventListener("click", () => {
+  const book = currentBook();
+  if (!book) return;
+  if (state.editing) {
+    book.pages[state.pageIndex] = $("page-editor").value;
+    book.updated = Date.now();
+    saveBooks();
+    state.editing = false;
+  } else {
+    state.editing = true;
+  }
+  renderPage();
+});
+
+// Tap sides to turn pages (ignored while editing or selecting text)
+els.page.addEventListener("click", (event) => {
+  if (state.editing || window.getSelection()?.toString()) return;
+  const rect = els.page.getBoundingClientRect();
+  flip(event.clientX - rect.left < rect.width / 2 ? -1 : 1);
+});
+
+// Swipe to turn pages on touch screens
+let touchStartX = 0, touchStartY = 0;
+els.stage.addEventListener("touchstart", (event) => {
+  touchStartX = event.changedTouches[0].clientX;
+  touchStartY = event.changedTouches[0].clientY;
+}, { passive: true });
+els.stage.addEventListener("touchend", (event) => {
+  if (state.editing) return;
+  const dx = event.changedTouches[0].clientX - touchStartX;
+  const dy = event.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) flip(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+document.addEventListener("keydown", (event) => {
+  if (els.reader.hidden || state.editing || event.target.matches("input, textarea, select")) return;
+  if (event.key === "ArrowRight") flip(1);
+  if (event.key === "ArrowLeft") flip(-1);
+});
+
+// Reader preferences
+els.fontSize.addEventListener("input", () => {
+  prefs.fontSize = Number(els.fontSize.value);
+  savePrefs();
+  renderPage();
+});
+els.fontFamily.addEventListener("change", () => {
+  prefs.fontFamily = els.fontFamily.value;
+  savePrefs();
+  renderPage();
+});
+
+/* ---------- Starfield background ---------- */
+(function starfield() {
+  const canvas = $("stars");
+  const ctx = canvas.getContext("2d");
+  let stars = [];
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const count = Math.min(220, Math.floor((canvas.width * canvas.height) / 9000));
+    stars = Array.from({ length: count }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: Math.random() * 1.4 + 0.2, s: Math.random() * 0.15 + 0.02, a: Math.random(),
+    }));
+  }
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (const st of stars) {
+      st.a += 0.01;
+      st.y += st.s;
+      if (st.y > canvas.height) st.y = 0;
+      ctx.globalAlpha = 0.4 + Math.sin(st.a) * 0.35;
+      ctx.fillStyle = "#cfe0ff";
+      ctx.beginPath();
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+  draw();
+})();
+
+/* ---------- Start ---------- */
+books = loadBooks();
+saveBooks();
+try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREFS_KEY)) || {}); } catch (e) { /* defaults */ }
+els.fontSize.value = prefs.fontSize;
+els.fontFamily.value = prefs.fontFamily;
+if (sessionStorage.getItem(SESSION_KEY) === "1") showApp();
+else showLogin();
+</script>
+
+
+</body></html>
