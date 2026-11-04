@@ -645,6 +645,7 @@ function renderDashboard() {
         <div class="tags">${(b.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
         <div class="card-actions">
           <button class="btn btn-small btn-primary" data-read="${b.id}">Read</button>
+          <button class="btn btn-small" data-speak="${b.id}">Read aloud</button>
           <button class="btn btn-small" data-edit="${b.id}">Edit</button>
           <button class="btn btn-small btn-danger" data-delete="${b.id}">Delete</button>
         </div>
@@ -697,6 +698,16 @@ els.grid.addEventListener("click", (event) => {
   const read = event.target.closest("[data-read]");
   const edit = event.target.closest("[data-edit]");
   const del = event.target.closest("[data-delete]");
+  const speak = event.target.closest("[data-speak]");
+  if (speak) {
+    const bk = books.find((x) => x.id === speak.dataset.speak);
+    if (bk && "speechSynthesis" in window) {
+      speechSynthesis.cancel();
+      const text = bk.pages.map((p) => (typeof p === "string" ? p : p.text || "")).join(" ");
+      speechSynthesis.speak(new SpeechSynthesisUtterance(text || bk.title));
+    }
+    return;
+  }
   if (read) openReader(read.dataset.read, 0);
   if (edit) openEditor(edit.dataset.edit);
   if (del) deleteBook(del.dataset.delete);
