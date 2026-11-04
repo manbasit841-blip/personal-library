@@ -140,7 +140,7 @@ main { padding: clamp(1rem, 3vw, 2.2rem) clamp(1rem, 4vw, 2.5rem) 4rem; max-widt
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
   animation: rise 0.5s ease both;
 }
-.card:hover { transform: translateY(-6px); box-shadow: var(--glow); border-color: rgba(110, 168, 255, 0.5); }
+.card:hover { transform: translateY(-6px); box-shadow: 0 14px 34px -12px var(--book, #4f7cff); border-color: var(--book, rgba(110, 168, 255, 0.5)); }
 .cover {
   height: 150px; position: relative; display: flex; align-items: flex-end; padding: 1rem;
   background: var(--cover, linear-gradient(135deg, #3b5bff, #9b59ff));
@@ -305,6 +305,21 @@ textarea.content { min-height: 180px; font-family: var(--font-serif); line-heigh
   .cover { height: 120px; }
 }
 </style>
+<style>
+.intro-piece { animation: introFly 2.5s cubic-bezier(.2,.8,.2,1) both; }
+.intro-piece.from-left { --fx: -120px; --fy: 0px; }
+.intro-piece.from-right { --fx: 120px; --fy: 0px; }
+.intro-piece.from-top { --fx: 0px; --fy: -120px; }
+.intro-piece.from-bottom { --fx: 0px; --fy: 120px; }
+@keyframes introFly {
+  0% { opacity: 0; transform: translate(var(--fx), var(--fy)) scale(0.85) rotate(-4deg); filter: blur(6px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translate(0,0) scale(1) rotate(0); filter: blur(0); }
+}
+#intro-welcome { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; color: #cfe3ff; letter-spacing: .15em; pointer-events: none; z-index: 99; animation: welcomeFade 3.6s ease both; }
+@keyframes letterGather { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 1; transform: translate(0,0) rotate(0); } }
+@keyframes welcomeFade { 0% { opacity: 0 } 25% { opacity: 1 } 75% { opacity: 1 } 100% { opacity: 0 } }
+</style>
 </head>
 <body>
 <canvas id="stars" aria-hidden="true"></canvas>
@@ -397,6 +412,8 @@ textarea.content { min-height: 180px; font-family: var(--font-serif); line-heigh
             <option value="sans">Sans</option>
           </select>
           <input id="font-size" type="range" min="14" max="26" step="1" value="18" aria-label="Font size">
+          <button id="btn-read-aloud" type="button" class="btn btn-small">Read aloud</button>
+          <button id="btn-stop-aloud" type="button" class="btn btn-small">Stop</button>
           <button id="btn-edit-page" class="btn btn-small">Edit page</button>
         </div>
       </div>
@@ -579,6 +596,14 @@ function esc(text) {
 function coverStyle(color) {
   return `--cover: linear-gradient(135deg, ${color}, #1a1f4a 90%)`;
 }
+const BOOK_PALETTE = ["#4f7cff", "#ff6b9d", "#2ec4b6", "#ffb347", "#9b59ff", "#43d17a", "#ff7a59", "#36c5f0"];
+function bookColor(b) {
+  if (b && b.color) return b.color;
+  const s = String((b && b.id) || "x");
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return BOOK_PALETTE[h % BOOK_PALETTE.length];
+}
 function findBook(id) { return books.find((b) => b.id === id); }
 
 /* ---------- Login ---------- */
@@ -586,6 +611,7 @@ function showApp() {
   els.login.hidden = true;
   els.app.hidden = false;
   renderDashboard();
+  if (window.__playIntro) setTimeout(window.__playIntro, 150);
 }
 function showLogin() {
   els.app.hidden = true;
@@ -635,8 +661,8 @@ function renderDashboard() {
     return (!q || hay.includes(q)) && (!cat || b.category === cat);
   });
   els.grid.innerHTML = list.map((b, i) => `
-    <article class="card" style="animation-delay:${i * 40}ms">
-      <div class="cover" style="${coverStyle(b.color)}">
+    <article class="card" style="animation-delay:${i * 40}ms;--book:${bookColor(b)};border-left:4px solid ${bookColor(b)}">
+      <div class="cover" style="${coverStyle(bookColor(b))}">
         <span class="cover-title">${esc(b.title)}</span>
       </div>
       <div class="card-body">
@@ -645,7 +671,6 @@ function renderDashboard() {
         <div class="tags">${(b.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
         <div class="card-actions">
           <button class="btn btn-small btn-primary" data-read="${b.id}">Read</button>
-          <button class="btn btn-small" data-speak="${b.id}">Read aloud</button>
           <button class="btn btn-small" data-edit="${b.id}">Edit</button>
           <button class="btn btn-small btn-danger" data-delete="${b.id}">Delete</button>
         </div>
@@ -670,10 +695,6 @@ function updateHero() {
   const hour = new Date().getHours();
   const part = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   $("hero-greeting").textContent = `Welcome, Hanma family member`;
-  if ("speechSynthesis" in window && !sessionStorage.getItem("welcomed")) {
-    sessionStorage.setItem("welcomed", "1");
-    speechSynthesis.speak(new SpeechSynthesisUtterance("Welcome, Hanma family member"));
-  }
   $("stat-books").textContent = books.length;
   $("stat-pages").textContent = books.reduce((sum, b) => sum + b.pages.length, 0);
   $("stat-cats").textContent = new Set(books.map((b) => b.category).filter(Boolean)).size;
@@ -805,6 +826,21 @@ function openReader(id, pageIndex = 0) {
   els.reader.hidden = false;
   els.readerTitle.textContent = book.title;
   renderPage();
+  $("btn-stop-aloud").onclick = () => { if ("speechSynthesis" in window) speechSynthesis.cancel(); };
+  $("btn-read-aloud").onclick = () => {
+    const b = findBook(state.bookId);
+    if (!b || !("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const text = b.pages.slice(state.pageIndex).join(" ") || b.title;
+    const u = new SpeechSynthesisUtterance(text);
+    const lang = /[؀-ۿ]/.test(text) ? "ur" : /[ऀ-ॿ]/.test(text) ? "hi" : "en";
+    const voices = speechSynthesis.getVoices();
+    const v = voices.find((x) => x.lang.toLowerCase().startsWith(lang));
+    u.lang = v ? v.lang : (lang === "en" ? "en-US" : lang + "-IN");
+    if (v) u.voice = v;
+    u.rate = 0.9;
+    speechSynthesis.speak(u);
+  };
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1244,6 +1280,139 @@ els.fontFamily.value = prefs.fontFamily;
 if (sessionStorage.getItem(SESSION_KEY) === "1") showApp();
 else showLogin();
 cloudSync();
+</script>
+<script>
+(function () {
+  function tick(ctx, when, freq) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "square"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.exponentialRampToValueAtTime(0.08, when + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.04);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(when); o.stop(when + 0.05);
+  }
+  let introAudioDone = false;
+  function playIntroSound() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = window.__introCtx || (window.__introCtx = new AC());
+      const play = () => {
+        if (introAudioDone) return;
+        introAudioDone = true;
+        const t0 = ctx.currentTime + 0.05;
+        for (let i = 0; i < 18; i++) tick(ctx, t0 + i * 0.12 + Math.random() * 0.03, 900 + Math.random() * 1400);
+      };
+      if (ctx.state === "running") { play(); return; }
+      const unlock = () => {
+        document.removeEventListener("pointerdown", unlock);
+        document.removeEventListener("keydown", unlock);
+        ctx.resume().then(play).catch(() => {});
+      };
+      document.addEventListener("pointerdown", unlock);
+      document.addEventListener("keydown", unlock);
+    } catch (e) {}
+  }
+  let welcomeSpoken = false;
+  function speakWelcome() {
+    if (!("speechSynthesis" in window)) return;
+    const say = () => {
+      if (welcomeSpoken) return;
+      const u = new SpeechSynthesisUtterance("Welcome, Hanma family member");
+      const v = speechSynthesis.getVoices().find((x) => /^en/i.test(x.lang));
+      if (v) u.voice = v;
+      u.lang = "en-US"; u.rate = 0.95;
+      u.onstart = () => { welcomeSpoken = true; };
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    };
+    const tryNow = () => {
+      if (speechSynthesis.getVoices().length) say();
+      else speechSynthesis.onvoiceschanged = () => { speechSynthesis.onvoiceschanged = null; say(); };
+    };
+    tryNow();
+    // Browsers may block speech until the first click or key press; speak then instead.
+    const gesture = () => {
+      document.removeEventListener("pointerdown", gesture);
+      document.removeEventListener("keydown", gesture);
+      if (!welcomeSpoken) say();
+    };
+    document.addEventListener("pointerdown", gesture);
+    document.addEventListener("keydown", gesture);
+    setTimeout(() => { if (!welcomeSpoken) { /* still blocked: wait for the first click */ } }, 1500);
+  }
+  function gatherTitles() {
+    document.querySelectorAll(".cover-title").forEach((el, n) => {
+      const txt = el.textContent;
+      el.textContent = "";
+      [...txt].forEach((ch, i) => {
+        const s = document.createElement("span");
+        s.textContent = ch === " " ? " " : ch;
+        const dx = (Math.random() - 0.5) * 400, dy = (Math.random() - 0.5) * 260;
+        s.style.cssText = `display:inline-block;transform:translate(${dx}px,${dy}px) rotate(${(Math.random() - 0.5) * 240}deg);opacity:0;animation:letterGather 1.4s cubic-bezier(.2,.8,.2,1) ${0.3 + n * 0.08 + i * 0.02}s forwards;`;
+        el.appendChild(s);
+      });
+    });
+  }
+  function runIntro() {
+    const pieces = document.querySelectorAll(".hero, .hero-stats > *, .card");
+    const dirs = ["from-left", "from-right", "from-top", "from-bottom"];
+    pieces.forEach((el, i) => {
+      el.classList.remove("intro-piece", ...dirs);
+      void el.offsetWidth;
+      el.classList.add("intro-piece", dirs[i % dirs.length]);
+      el.style.animationDelay = (i % 6) * 0.05 + "s";
+    });
+    const w = document.createElement("div");
+    w.id = "intro-welcome";
+    const msg = "Welcome, Hanma family member";
+    [...msg].forEach((ch, i) => {
+      const s = document.createElement("span");
+      s.textContent = ch === " " ? " " : ch;
+      s.style.cssText = "display:inline-block;opacity:0;transition:opacity .35s ease;";
+      w.appendChild(s);
+    });
+    document.body.appendChild(w);
+    setTimeout(() => w.remove(), 3700);
+    // A cloud of tiny dots that drifts in from the edges and settles into the welcome line.
+    const letters = [...w.querySelectorAll("span")].filter((s) => s.textContent.trim() !== "");
+    const hosts = letters.map((s) => s.getBoundingClientRect());
+    const cloud = document.createElement("div");
+    cloud.id = "intro-dots";
+    cloud.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:98;";
+    document.body.appendChild(cloud);
+    const dots = [];
+    for (let k = 0; k < 700; k++) {
+      const r = hosts[k % letters.length];
+      const d = document.createElement("i");
+      const sx = Math.random() * innerWidth, sy = Math.random() * innerHeight;
+      const tx = r.left + Math.random() * r.width, ty = r.top + Math.random() * r.height;
+      const size = (2 + Math.random() * 2.5).toFixed(1);
+      const dur = (0.9 + Math.random() * 0.9).toFixed(2), delay = (Math.random() * 0.7).toFixed(2);
+      d.style.cssText = `position:absolute;left:0;top:0;width:${size}px;height:${size}px;border-radius:50%;background:hsl(${200 + Math.random() * 80},90%,72%);box-shadow:0 0 6px #8fbfff;transform:translate(${sx}px,${sy}px);transition:transform ${dur}s cubic-bezier(.3,.7,.2,1) ${delay}s, opacity .6s ease;`;
+      cloud.appendChild(d);
+      dots.push(d);
+      requestAnimationFrame(() => requestAnimationFrame(() => { d.style.transform = `translate(${tx}px,${ty}px)`; }));
+    }
+    // Letters take shape as the dots arrive.
+    letters.forEach((s, i) => setTimeout(() => { s.style.opacity = "1"; }, 1100 + i * 80));
+    // Then the dots swirl outward and fade, and the line dissolves.
+    setTimeout(() => {
+      dots.forEach((d) => {
+        const ang = Math.random() * Math.PI * 2, far = 300 + Math.random() * 500;
+        d.style.transition = "transform 1s ease-in, opacity 1s ease-in";
+        d.style.transform = `translate(${innerWidth / 2 + Math.cos(ang) * far}px,${innerHeight / 2 + Math.sin(ang) * far}px) rotate(540deg)`;
+        d.style.opacity = "0";
+      });
+    }, 3000);
+    setTimeout(() => { w.style.transition = "opacity .6s ease"; w.style.opacity = "0"; }, 3200);
+    setTimeout(() => cloud.remove(), 4200);
+    gatherTitles();
+    playIntroSound();
+    speakWelcome();
+  }
+  window.__playIntro = () => { welcomeSpoken = false; runIntro(); };
+})();
 </script>
 </body>
 </html>
